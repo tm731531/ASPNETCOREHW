@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using _20200522.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 
 namespace _20200522.Controllers
 {
@@ -35,8 +37,19 @@ namespace _20200522.Controllers
 
         // POST: api/Department
         [HttpPost]
-        public void Post([FromBody] string value)
-        {
+        public ActionResult<Department> Post(Department department)
+        { 
+
+            #region Use stored procedure
+            SqlParameter name = new SqlParameter("@Name", department.Name);
+            SqlParameter budget = new SqlParameter("@Budget", department.Budget);
+            SqlParameter startDate = new SqlParameter("@StartDate", department.StartDate);
+            SqlParameter instructorID = new SqlParameter("@InstructorID", department.InstructorId);
+            department.DepartmentId = db.Department.FromSqlRaw("execute Department_Insert @Name,@Budget,@StartDate,@InstructorID",
+                name, budget, startDate, instructorID).Select(c => c.DepartmentId).ToList().First();
+            #endregion
+
+            return CreatedAtAction("GetDepartment", new { id = department.DepartmentId }, department);
         }
 
         // PUT: api/Department/5
