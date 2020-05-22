@@ -20,5 +20,6 @@ namespace _20200522.Models
         public virtual Department Department { get; set; }
         public virtual ICollection<CourseInstructor> CourseInstructor { get; set; }
         public virtual ICollection<Enrollment> Enrollment { get; set; }
+        public bool isDeleted {get;set;}
     }
 }
