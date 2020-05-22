@@ -21,5 +21,6 @@ namespace _20200522.Models
         public virtual Person Instructor { get; set; }
         public virtual ICollection<Course> Course { get; set; }
         public bool isDeleted {get;set;}
+        public DateTime DateModified { get; internal set; }
     }
 }
