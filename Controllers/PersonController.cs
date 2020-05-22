@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using _20200522.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace _20200522.Controllers
 {
@@ -20,37 +21,86 @@ namespace _20200522.Controllers
             this.db = db;
         }
 
+       
         // GET: api/Person
-
         [HttpGet]
-        public IEnumerable<Person> Get()
+        public async Task<ActionResult<IEnumerable<Person>>> GetPerson()
         {
-            return db.Person.ToList();
+            return await db.Person.Where(c =>c.isDeleted == false).ToListAsync();
         }
 
-        // GET: api/Person/5
-        [HttpGet("{id}", Name = "Get")]
-        public string Get(int id)
+        // GET: api/People/5
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Person>> GetPerson(int id)
         {
-            return "value";
-        }
+            var person = await db.Person.FindAsync(id);
 
-        // POST: api/Person
-        [HttpPost]
-        public void Post([FromBody] string value)
-        {
+            if (person == null || (person.isDeleted))
+            {
+                return NotFound();
+            }
+
+            return person;
         }
 
         // PUT: api/Person/5
+        // To protect from overposting attacks, enable the specific properties you want to bind to, for
+        // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        public async Task<IActionResult> PutPerson(int id, Person person)
         {
+            if (id != person.Id)
+            {
+                return BadRequest();
+            }
+            person.DateModified = DateTime.Now;
+            db.Entry(person).State = EntityState.Modified;
+
+            try
+            {
+                await db.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (! db.Person.Any(e => e.Id == id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return NoContent();
         }
 
-        // DELETE: api/ApiWithActions/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
+        // POST: api/Person
+        // To protect from overposting attacks, enable the specific properties you want to bind to, for
+        // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
+        [HttpPost]
+        public async Task<ActionResult<Person>> PostPerson(Person person)
         {
+            db.Person.Add(person);
+            await db.SaveChangesAsync();
+
+            return CreatedAtAction("GetPerson", new { id = person.Id }, person);
+        }
+
+        // DELETE: api/Person/5
+        [HttpDelete("{id}")]
+        public async Task<ActionResult<Person>> DeletePerson(int id)
+        {
+            var person = await db.Person.FindAsync(id);
+            if (person == null)
+            {
+                return NotFound();
+            }
+
+            person.isDeleted = true;
+            await db.SaveChangesAsync();
+
+            return person;
         }
     }
 }

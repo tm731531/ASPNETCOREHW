@@ -21,25 +21,71 @@ namespace _20200522.Controllers
             this.db = db;
         }
 
-        // GET: api/Department
+          // GET: api/Departments
         [HttpGet]
-        public IEnumerable<Department> Get()
+        public async Task<ActionResult<IEnumerable<Department>>> GetDepartment()
         {
-            return db.Department.ToList();
+            return await db.Department.Where(c => c.isDeleted == false).ToListAsync();
         }
 
-        // GET: api/Department/5
-        [HttpGet("{id}", Name = "Get")]
-        public string Get(int id)
+        // GET: api/Departments/5
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Department>> GetDepartment(int id)
         {
-            return "value";
+            var department = await db.Department.FindAsync(id);
+
+            if (department == null || ( department.isDeleted))
+            {
+                return NotFound();
+            }
+
+            return department;
         }
 
-        // POST: api/Department
+        // PUT: api/Departments/5
+        // To protect from overposting attacks, enable the specific properties you want to bind to, for
+        // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
+        [HttpPut("{id}")]
+        public async Task<ActionResult> PutDepartment(int id, Department department)
+        {
+            if (id != department.DepartmentId)
+            {
+                return BadRequest();
+            }
+
+            byte[] _rowVersion = db.Department.Where(c => c.DepartmentId == id).Select(c => c.RowVersion).FirstOrDefault();
+            department.RowVersion = _rowVersion;
+            department.DateModified = DateTime.Now;
+            db.Entry(department).State = EntityState.Modified;
+
+            try
+            {
+                await db.SaveChangesAsync();
+
+               
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!DepartmentExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return NoContent();
+        }
+
+        // POST: api/Departments
+        // To protect from overposting attacks, enable the specific properties you want to bind to, for
+        // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
         [HttpPost]
-        public ActionResult<Department> Post(Department department)
-        { 
-
+        public ActionResult<Department> PostDepartment(Department department)
+        {
+           
             #region Use stored procedure
             SqlParameter name = new SqlParameter("@Name", department.Name);
             SqlParameter budget = new SqlParameter("@Budget", department.Budget);
@@ -52,16 +98,32 @@ namespace _20200522.Controllers
             return CreatedAtAction("GetDepartment", new { id = department.DepartmentId }, department);
         }
 
-        // PUT: api/Department/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        // DELETE: api/Departments/5
+        [HttpDelete("{id}")]
+        public async Task<ActionResult<Department>> DeleteDepartment(int id)
         {
+            var department = db.Department.Find(id);
+            if (department == null)
+            {
+                return NotFound();
+            }
+            department.isDeleted = true;
+            //db.Department.Remove(department);
+            await db.SaveChangesAsync();
+
+            return department;
         }
 
-        // DELETE: api/ApiWithActions/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
+        private bool DepartmentExists(int id)
         {
+            return db.Department.Any(e => e.DepartmentId == id);
+        }
+
+
+        [HttpGet("GetDepartmentCourseCount")]
+        public async Task<ActionResult<IEnumerable<VwDepartmentCourseCount>>> GetDepartmentCourseCount()
+        {
+            return await db.VwDepartmentCourseCount.FromSqlRaw("SELECT * FROM [dbo].[vwDepartmentCourseCount]").ToListAsync();
         }
     }
 }
